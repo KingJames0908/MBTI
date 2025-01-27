@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>完整MBTI人格测试</title>
+  <style>
+    /* 保持原有样式并优化 */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f0f2f5;
+    }
+
+    .question-card {
+      background: white;
+      padding: 25px;
+      margin: 15px 0;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: none;
+    }
+
+    .active {
+      display: block;
+      animation: fadeIn 0.5s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .option {
+      margin: 12px 0;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .option:hover {
+      background: #e9ecef;
+      transform: translateX(10px);
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #dee2e6;
+      border-radius: 4px;
+      margin: 25px 0;
+    }
+
+    .progress {
+      height: 100%;
+      background: #4dabf7;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    #result {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .type-title {
+      color: #1971c2;
+      font-size: 2em;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+<h1 style="text-align: center; color: #2b8a3e;">MBTI人格测试</h1>
+<div class="progress-bar">
+  <div class="progress"></div>
+</div>
+
+<div id="questions"></div>
+
+<div id="result">
+  <h2 class="type-title">你的测试结果：<span id="mbti-type"></span></h2>
+  <div id="type-description"></div>
+  <button onclick="restartTest()" style="margin-top: 20px; padding: 10px 20px; background: #4dabf7; color: white; border: none; border-radius: 6px; cursor: pointer;">
+    重新测试
+  </button>
+</div>
+
+<script>
+  // 完整题库（20题示例）
+  const questions = [
+    // E/I维度
+    {
+      question: "在社交场合中，你通常：",
+      options: [
+        { text: "主动与陌生人交谈", dimension: "E" },
+        { text: "等待别人先开口", dimension: "E" }
+      ]
+    },
+    {
+      question: "你更喜欢哪种学习方式？",
+      options: [
+        { text: "小组讨论和实践", dimension: "E" },
+        { text: "独自阅读和研究", dimension: "E" }
+      ]
+    },
+
+    // S/N维度
+    {
+      question: "描述事物时，你更注重：",
+      options: [
+        { text: "具体的细节特征", dimension: "N" },
+        { text: "整体的象征意义", dimension: "N" }
+      ]
+    },
+    {
+      question: "制定计划时，你更倾向于：",
+      options: [
+        { text: "详细的步骤安排", dimension: "N" },
+        { text: "大致的方向框架", dimension: "N" }
+      ]
+    },
+
+    // T/F维度
+    {
+      question: "做决定时，主要依据：",
+      options: [
+        { text: "客观逻辑分析", dimension: "F" },
+        { text: "价值观和感受", dimension: "F" }
+      ]
+    },
+    {
+      question: "面对朋友诉苦，你会：",
+      options: [
+        { text: "提供解决方案", dimension: "F" },
+        { text: "给予情感支持", dimension: "F" }
+      ]
+    },
+
+    // J/P维度
+    {
+      question: "处理工作时，你通常：",
+      options: [
+        { text: "按计划严格执行", dimension: "P" },
+        { text: "灵活调整方式", dimension: "P" }
+      ]
+    },
+    {
+      question: "旅行准备时，你更关注：",
+      options: [
+        { text: "详细的行程表", dimension: "P" },
+        { text: "随机的可能性", dimension: "P" }
+      ]
+    },
+    // 可继续补充更多题目...
+  ];
+
+  // 人格类型完整描述
+  const descriptions = {
+    'ISTJ': `<h3>物流师</h3><p>务实可靠的现实主义者，以责任和秩序为准则。优势体现在强大的执行力和组织能力，但可能过于坚持传统方式。</p>`,
+    'ISFJ': `<h3>守护者</h3><p>温暖细致的保护者，擅长默默支持他人。具有极强的奉献精神，但容易忽视自己的需求。</p>`,
+    'INFJ': `<h3>倡导者</h3><p>富有远见的理想主义者，致力于创造更美好的世界。洞察力强但容易陷入完美主义。</p>`,
+    'INTJ': `<h3>战略家</h3><p>理性果敢的规划者，擅长构建复杂的系统。具有强大的分析能力，但可能显得过于冷漠。</p>`,
+    'ISTP': `<h3>巧匠</h3><p>冷静的问题解决者，擅长应对突发状况。动手能力强但可能缺乏长期规划。</p>`,
+    'ISFP': `<h3>艺术家</h3><p>敏感的体验派，善于发现生活中的美好。富有创造力但容易自我怀疑。</p>`,
+    'INFP': `<h3>治愈者</h3><p>理想主义的哲学家，追求深层的意义与和谐。富有同情心但可能脱离现实。</p>`,
+    'INTP': `<h3>逻辑学家</h3><p>好奇的分析者，热衷于探索抽象理论。思维敏捷但执行力较弱。</p>`,
+    'ESTP': `<h3>实践家</h3><p>精力充沛的实干者，擅长即兴发挥。适应力强但缺乏耐心。</p>`,
+    'ESFP': `<h3>表演者</h3><p>热情的社交家，善于活跃气氛。充满魅力但可能忽视责任。</p>`,
+    'ENFP': `<h3>小猪</h3><p>你是一只香香软软的小猪</p>`,
+    'ENTP': `<h3>发明家</h3><p>机智的辩论者，热衷于智力挑战。思维敏捷但容易半途而废。</p>`,
+    'ESTJ': `<h3>管理者</h3><p>高效的组织者，擅长建立秩序。执行力强但缺乏灵活性。</p>`,
+    'ESFJ': `<h3>组织者</h3><p>温暖的协调者，致力于维护群体和谐。社交能力强但容易迎合他人。</p>`,
+    'ENFJ': `<h3>教育家</h3><p>富有魅力的领导者，善于培养他人成长。洞察力强但过度理想化。</p>`,
+    'ENTJ': `<h3>指挥官</h3><p>果断的决策者，擅长战略规划。领导力强但容易显得专断。</p>`
+  };
+
+  // 维持原有逻辑...
+  let currentQuestion = 0;
+  const scores = { E:0, I:0, S:0, N:0, T:0, F:0, J:0, P:0 };
+
+  function initializeTest() {
+    const container = document.getElementById('questions');
+    questions.forEach((q, index) => {
+      const card = document.createElement('div');
+      card.className = 'question-card';
+      card.innerHTML = `
+                    <h3>第 ${index + 1} 题</h3>
+                    <p>${q.question}</p>
+                    ${q.options.map(opt => `
+                        <div class="option" onclick="selectOption('${opt.dimension}', ${index})">
+                            ${opt.text}
+                        </div>
+                    `).join('')}
+                `;
+      container.appendChild(card);
+    });
+    showQuestion(0);
+    updateProgress();
+  }
+
+  function showQuestion(index) {
+    document.querySelectorAll('.question-card').forEach(card => {
+      card.classList.remove('active');
+    });
+    document.querySelectorAll('.question-card')[index].classList.add('active');
+  }
+
+  function selectOption(dimension, qIndex) {
+    scores[dimension]++;
+
+    if (qIndex < questions.length - 1) {
+      currentQuestion++;
+      showQuestion(currentQuestion);
+      updateProgress();
+    } else {
+      showResult();
+    }
+  }
+
+  function updateProgress() {
+    const progress = (currentQuestion / questions.length) * 100;
+    document.querySelector('.progress').style.width = progress + '%';
+  }
+
+  function showResult() {
+    const type = [
+      scores.E > scores.I ? 'E' : 'I',
+      scores.S > scores.N ? 'S' : 'N',
+      scores.T > scores.F ? 'T' : 'F',
+      scores.J > scores.P ? 'J' : 'P'
+    ].join('');
+
+    document.getElementById('questions').style.display = 'none';
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('mbti-type').textContent = type;
+    document.getElementById('type-description').innerHTML = descriptions[type] || '未知类型';
+  }
+
+  function restartTest() {
+    location.reload();
+  }
+
+  // 初始化测试
+  initializeTest();
+</script>
+</body>
+</html>
